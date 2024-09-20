@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finding Multi-Route Distance</title>
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+  <style>
+    /* General body style */
+    body { 
+      font-family: 'Arial', sans-serif; 
+      margin: 0;
+      padding: 20px;
+      background-color: #cff89a;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      color: #a89393;
+      font-size: 40px;
+      margin-bottom: 20px;
+      font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    }
+
+    #map {
+      width: 100%;
+      height: 500px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+
+    #input-fields {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Centers the entire input section */
+  justify-content: center;
+  width: 100%;
+}
+
+.input-container {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Center the label and input together */
+  margin-bottom: 15px;
+}
+
+label {
+  font-weight: bold;
+  color: #555;
+  margin-right: 10px; /* Space between label and input */
+}
+
+input {
+  padding: 10px;
+  width: 300px; /* Set a fixed width for input fields */
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+button {
+  display: block;
+  margin: 10px auto; /* Center buttons */
+  color:#e6dede;
+  background-color: #0baff0;
+  border: #a89393;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-colour 0.3s ease;
+  size: 100%;
+}
+
+
+    button:hover {
+      background-color: #cc9733;
+    }
+
+    #results {
+      margin-top: 20px;
+      background-color: #f1f889;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(220, 222, 230, 0.1);
+      color: #1e2522;
+    }
+
+    .route-info {
+      margin-bottom: 5px;
+      border-left: 5px solid #c07a12;
+      padding-left: 10px;
+    }
+.file-upload{
+  color: #0baff0;
+}
+    .button-group {
+      display: flex;
+      justify-content: space-between;
+      margin: 20px 0;
+    }
+    .add-more{
+      padding-left: 50%;
+    }
+
+    @media (max-width: 768px) {
+      input {
+        width: 100%;
+        margin-bottom: 10px;
+      }
+      button {
+        width: 100%;
+        margin: 5px 0;
+      }
+      .input-container {
+        flex-direction: column;
+        margin-right: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Finding Multi-Route Map with Distance</h1>
+ 
+  <div id="map"></div>
+
+  <div id="input-fields">
+    <div class="input-container">
+      <label>From :</label>
+      <input type="text" class="from" placeholder="Starting location or Lat,Lng">
+    </div>
+    <div class="input-container">
+      <label>To :</label>
+      <input type="text" class="to" placeholder="Destination or Lat,Lng">
+    </div>
+  </div>
+
+  <button id="add-more"><i class="fas fa-plus"></i> Add More Locations</button>
+  <button id="calculate-route">Calculate Routes & Distances</button>
+
+  <div class="button-group">
+    <div>
+      <label>Upload Location File (CSV, JSON, or XLSX):</label>
+      <input type="file" id="file-upload" accept=".csv, .json, .xlsx">
+      <button id="upload-button">Upload</button>
+        <!-- Add the Download Template Button -->
+        <button id="download-template"><i class="fas fa-download"></i> Download Template</button>
+    </div>
+    <div>
+      <button id="clear-button">Clear</button>
+      <button id="download-results"><i class="fas fa-download"></i> Download Results as Excel</button>
+    </div>
+  </div>
+
+  <div id="results"></div>
+
+  <script>
+    // JavaScript code remains unchanged...
+    mapboxgl.accessToken = 'pk.eyJ1Ijoic3ViaGFtcHJlZXQiLCJhIjoiY2toY2IwejF1MDdodzJxbWRuZHAweDV6aiJ9.Ys8MP5kVTk5P9V2TDvnuDg';
+    const map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/streets-v11',
+      center: [0, 0],
+      zoom: 2
+    });
+
+    let routeLayers = [];
+    let markers = [];
+    let resultsData = [];
+
+    map.addControl(new mapboxgl.NavigationControl(), 'top-left');
+    map.addControl(new mapboxgl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true }));
+
+    document.getElementById('add-more').addEventListener('click', function() {
+      const inputContainer = document.createElement('div');
+      inputContainer.classList.add('input-container');
+      inputContainer.innerHTML = `
+        <label>From (name or lat,lng):</label>
+        <input type="text" class="from" placeholder="Starting location or Lat,Lng">
+        <label>To (name or lat,lng):</label>
+        <input type="text" class="to" placeholder="Destination or Lat,Lng">
+      `;
+      document.getElementById('input-fields').appendChild(inputContainer);
+    });
+
+    async function calculateRoute(fromCoords, toCoords, color, i) {
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${fromCoords[0]},${fromCoords[1]};${toCoords[0]},${toCoords[1]}?geometries=geojson&access_token=${mapboxgl.accessToken}`;
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.routes.length > 0) {
+        const route = data.routes[0];
+        const distance = route.distance / 1000;
+        const routeCoordinates = route.geometry.coordinates;
+
+        const layerId = `route-${i}`;
+        map.addLayer({
+          id: layerId,
+          type: 'line',
+          source: { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: routeCoordinates } } },
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: { 'line-color': color, 'line-width': 6 }
+        });
+
+        routeLayers.push(layerId);
+
+        const startMarker = new mapboxgl.Marker({ color: color }).setLngLat(fromCoords).addTo(map);
+        const endMarker = new mapboxgl.Marker({ color: color }).setLngLat(toCoords).addTo(map);
+
+        markers.push(startMarker, endMarker);
+
+        return { distance, color };
+      } else {
+        return { distance: null, color };
+      }
+    }
+
+    async function getCoordinates(input) {
+      if (input.includes(',')) {
+        const [lat, lng] = input.split(',').map(Number);
+        return [lng, lat];
+      } else {
+        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(input)}.json?access_token=${mapboxgl.accessToken}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.features.length > 0) return data.features[0].center;
+        else return null;
+      }
+    }
+
+    function getRandomColor() {
+      const letters = '0123456789ABCDEF';
+      let color = '#';
+      for (let i = 0; i < 6; i++) color += letters[Math.floor(Math.random() * 16)];
+      return color;
+    }
+
+    // Function to parse CSV file
+    function parseCSV(content) {
+      const lines = content.trim().split("\n");
+      const locations = [];
+      for (const line of lines) {
+        const [from, to] = line.split(",");
+        if (from && to) locations.push({ from: from.trim(), to: to.trim() });
+      }
+      return locations;
+    }
+
+    // Function to parse JSON file
+    function parseJSON(content) {
+      return JSON.parse(content);
+    }
+
+    // Function to parse Excel file
+    function parseExcel(content) {
+      const workbook = XLSX.read(content, { type: 'binary' });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      const locations = [];
+      for (const row of data) {
+        const [from, to] = row;
+        if (from && to) locations.push({ from: from.trim(), to: to.trim() });
+      }
+      return locations;
+    }
+
+    // Handle file upload
+    document.getElementById('upload-button').addEventListener('click', async function() {
+      const fileInput = document.getElementById('file-upload');
+      const file = fileInput.files[0];
+
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = async function(event) {
+          let locations = [];
+
+          if (file.name.endsWith('.csv')) {
+            locations = parseCSV(event.target.result);
+          } else if (file.name.endsWith('.json')) {
+            locations = parseJSON(event.target.result);
+          } else if (file.name.endsWith('.xlsx')) {
+            locations = parseExcel(event.target.result);
+          }
+
+          document.getElementById('results').innerHTML = '';
+          resultsData = [];
+          for (let i = 0; i < locations.length; i++) {
+            const fromCoords = await getCoordinates(locations[i].from);
+            const toCoords = await getCoordinates(locations[i].to);
+            if (fromCoords && toCoords) {
+              const color = getRandomColor();
+              const result = await calculateRoute(fromCoords, toCoords, color, i);
+              document.getElementById('results').innerHTML += `
+                <div class="route-info" style="border-left: 5px solid ${result.color};">
+                  Distance from <strong>${locations[i].from}</strong> to <strong>${locations[i].to}</strong>: ${result.distance ? result.distance.toFixed(2) : 'N/A'} km
+                </div>`;
+              resultsData.push([locations[i].from, locations[i].to, result.distance ? result.distance.toFixed(2) : 'N/A']);
+            }
+          }
+        };
+        reader.readAsBinaryString(file);
+      }
+    });
+// Download the template Excel file
+document.getElementById('download-template').addEventListener('click', function() {
+  const worksheetData = [
+    ['From', 'To'], // Headers for the columns
+  ];
+
+  // Create a worksheet from the array
+  const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+  
+  // Create a workbook and add the worksheet
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Template');
+  
+  // Export the Excel file
+  XLSX.writeFile(workbook, 'location_template.xlsx');
+});
+
+    // Clear the map and results
+    document.getElementById('clear-button').addEventListener('click', function() {
+      for (let i = 0; i < routeLayers.length; i++) {
+        if (map.getLayer(routeLayers[i])) {
+          map.removeLayer(routeLayers[i]);
+          map.removeSource(routeLayers[i]);
+        }
+      }
+      routeLayers = [];
+      markers.forEach(marker => marker.remove());
+      markers = [];
+      document.getElementById('results').innerHTML = '';
+      resultsData = [];
+       // Clear the uploaded file input
+  document.getElementById('file-upload').value = '';
+    });
+
+
+    document.getElementById('calculate-route').addEventListener('click', async function() {
+      const fromInputs = document.querySelectorAll('.from');
+      const toInputs = document.querySelectorAll('.to');
+      document.getElementById('results').innerHTML = '';
+      resultsData = [];
+
+      for (let i = 0; i < fromInputs.length; i++) {
+        const fromCoords = await getCoordinates(fromInputs[i].value);
+        const toCoords = await getCoordinates(toInputs[i].value);
+        if (fromCoords && toCoords) {
+          const color = getRandomColor();
+          const result = await calculateRoute(fromCoords, toCoords, color, i);
+          document.getElementById('results').innerHTML += `
+            <div class="route-info" style="border-left: 5px solid ${result.color};">
+              Distance from <strong>${fromInputs[i].value}</strong> to <strong>${toInputs[i].value}</strong>: ${result.distance ? result.distance.toFixed(2) : 'N/A'} km
+            </div>`;
+          resultsData.push([fromInputs[i].value, toInputs[i].value, result.distance ? result.distance.toFixed(2) : 'N/A']);
+        }
+      }
+    });
+
+    // Download results as Excel
+    document.getElementById('download-results').addEventListener('click', function() {
+      if (resultsData.length === 0) {
+        alert('No results to download!');
+        return;
+      }
+
+      const worksheet = XLSX.utils.aoa_to_sheet([['From', 'To', 'Distance (km)'], ...resultsData]);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Routes');
+      XLSX.writeFile(workbook, 'route_distances.xlsx');
+    });
+  </script>
+</body>
+</html>
