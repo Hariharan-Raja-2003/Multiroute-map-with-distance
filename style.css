@@ -1,0 +1,141 @@
+/* General body style */
+body { 
+    font-family: 'Arial', sans-serif; 
+    margin: 0;
+    padding: 20px;
+    background-color: #474b43;
+    color: #f7eded;
+  }
+  h1 {
+    text-align: center;
+    color: #f7f3f3;
+    font-size: 40px;
+  
+    margin-bottom: 20px;
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+  }
+  label{
+      font-weight: bold;
+color: #f1e6e6;
+
+  }
+
+  #map {
+    width: 90%;
+    height: 500px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    margin-left: 60px;
+    border-color: rgb(119, 108, 108);
+    border-style: solid;
+  }
+
+  #input-fields {
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    width: 80%; /* Adjust the width as needed */
+  }
+
+  .input-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+
+  .input-container label {
+    font-weight: bold;
+    color: #f3efef;
+    margin-right: 10px; /* Space between label and input */
+  }
+
+  .input-container input {
+    padding: 10px;
+    width: 30%; /* Adjusted width for inputs to fit in one line */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  input {
+width: 100px; /* Set width for input fields */
+border: 1px solid #ffffff;
+border-radius: 4px;
+box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+  #add-more {
+
+    background-color: #d4d4c1;
+    box-shadow:0 2px 100px rgba(0, 0, 0, 0.1); ;
+    color: rgb(65, 60, 60);
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  button {
+    margin-left: 10px;
+    color: rgb(65, 60, 60);
+    font-size: 18px;
+    font-style: italic;
+    font-weight: 50px;
+    background-color: #d4d4c1;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+  }
+
+#file-upload {
+margin-left: 20px;
+margin-top: 10px;
+padding: 5px;
+width: 300px; /* Adjust the width of the file input */
+border: 1px solid #ffffff;
+border-radius: 5px;
+cursor: pointer;
+}
+  #results {
+    margin-top: 20px;
+    background-color: #b8b9a0;
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 18px;
+    font-style: italic;
+    color: #262b29;
+  }
+#calculate-route{
+  margin-left: 42%;
+  margin-top: 10px;
+}
+#upload-button{
+   margin-left: 17%;
+   margin-top: 20px;
+}
+#clear-button{
+margin-left: 20%;
+  margin-top: 20px;
+}
+.button-group{
+  margin-left: 380px;
+  margin-top: 30px;
+  }
+  .file-text{
+    margin-left: 45px;
+  }
+  .route-info {
+    margin-bottom: 5px;
+    border-left: 5px solid #c07a12;
+    padding-left: 10px;
+  }
+
+  @media (max-width: 768px) {
+    .input-container {
+      flex-direction: column;
+    }
+    .input-container input {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    button {
+      width: 100%;
+    }
+  }
